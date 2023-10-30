@@ -33,7 +33,7 @@ router.get('/products', (req, res) => {
     }
   })
 })
-router.get('/products/:id', (req, res) => {
+router.get('/products/id/:id', (req, res) => {
   const productId = req.params.id
   db.query(
     'SELECT * FROM products WHERE id = ?',
@@ -51,6 +51,53 @@ router.get('/products/:id', (req, res) => {
       }
     }
   )
+})
+
+router.get('/products/sort', (req, res) => {
+  const category = req.query.category
+  const priceDirection = req.query.price
+  let sql = 'SELECT * FROM products'
+
+  if (category && priceDirection) {
+    sql += ` WHERE category = '${category}' ORDER BY price ${
+      priceDirection === 'asc' ? 'ASC' : 'DESC'
+    }`
+  } else if (category) {
+    sql += ` WHERE category = '${category}'`
+  } else if (priceDirection) {
+    sql += ` ORDER BY price ${priceDirection === 'asc' ? 'ASC' : 'DESC'}`
+  }
+
+  db.query(sql, (error, results) => {
+    if (error) {
+      console.error('Query execution error:', error)
+      res
+        .status(500)
+        .json({ error: 'An error occurred while fetching products' })
+    } else {
+      res.json(results)
+    }
+  })
+})
+
+router.get('/products/search', (req, res) => {
+  const searchTitle = req.query.title
+  if (!searchTitle) {
+    return res.status(400).json({ error: 'Title parameter is required' })
+  }
+
+  const sql = 'SELECT * FROM products WHERE LOWER(title) LIKE ?'
+
+  db.query(sql, [`%${searchTitle.toLowerCase()}%`], (error, results) => {
+    if (error) {
+      console.error('Query execution error:', error)
+      res
+        .status(500)
+        .json({ error: 'An error occurred while searching for products' })
+    } else {
+      res.json(results)
+    }
+  })
 })
 
 module.exports = router
